@@ -469,11 +469,12 @@ def makeOpArray(config, skipCompile=False, silent=False):
     return opArray
 
 def doOpArray(opArray):
-    errString = ""
+    errStringTotal = ""
     hasErrors = False
     filesToSubmit = set()
 
     for op in opArray:
+        op.clearErrors()
         if (op.existFiles != None):
             filesToSubmit = filesToSubmit.union(set(op.existFiles))
         if (op.compileFiles != None):
@@ -481,9 +482,9 @@ def doOpArray(opArray):
         errString = op.do()
         if (op.hasErrors):
             hasErrors = True
-            errString += writeHeaderLine("Problem {}".format(op.number), True)
-            errString += errString
-    return (filesToSubmit, hasErrors, errString)
+            errStringTotal += writeHeaderLine("Problem {}".format(op.number), True)
+            errStringTotal += errString
+    return (filesToSubmit, hasErrors, errStringTotal)
 
 def writeHeaderLine(header, filled=False):
     """Used to write a line in the header for the errors.log file.
