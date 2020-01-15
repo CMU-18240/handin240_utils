@@ -1,3 +1,5 @@
+from svinterface import checkInterface
+
 import configparser
 import subprocess as sp
 import sys
@@ -7,6 +9,7 @@ import tempfile
 import glob
 import json
 import csv
+from pathlib import Path
 
 # Return values
 HANDIN_YES      = 0
@@ -17,6 +20,7 @@ ERR_NOCONFIG    = 100
 ERR_BADCONFIG   = 101
 ERR_OP          = 200
 ERR_NOEXIST     = 201
+ERR_BADINTERF   = 204
 ERR_NOCOMPILE   = 202
 ERR_FAILTEST    = 203
 ERR_HANDIN_DIR  = 210
@@ -229,6 +233,8 @@ class Operation:
         compileFiles ([str]): List of files to compile.
         testFiles ([str]): List of TA testbenches to run against. (WIP)
         specificModules ([str]): Name of modules to compile for.
+        refFilePath (str): Path to where the SV reference files are. Used for
+            SV module interface checking
         hasErrors (bool): True if there is an error with the problem, False
             otherwise.
         err (str): Output of error.
@@ -237,12 +243,13 @@ class Operation:
         silent (bool): True if we don't want to print anything to console.
 
     """
-    def __init__(self, skipCompile=False, silent=False):
+    def __init__(self, refFilePath=None, skipCompile=False, silent=False):
         self.number = None
         self.existFiles = None
         self.compileFiles = None
         self.testFiles = None
         self.specificModules = None
+        self.refFilePath = refFilePath
         self.hasErrors = False
         self.err = ""
         self.useWildcard = False
@@ -328,6 +335,8 @@ class Operation:
             errMessage = "failed to compile"
         elif (errType == ERR_FAILTEST):
             errMessage = "failed TA testbench"
+        elif (errType == ERR_BADINTERF):
+            errMessage = "incorrect interface"
         else:
             errMessage = "unspecified error"
         return mainFile + ": " + bcolors.FAIL + errMessage + bcolors.ENDC
@@ -364,6 +373,35 @@ class Operation:
 
     def removeOldDir(self, fileList, oldDir):
         return ", ".join(fileList).replace("{}/".format(oldDir), "")
+
+    def checkInterface(self):
+        """Checks the module interfaces provided by files in the refFilePath
+        folder, if they exist.
+
+        Args:
+
+        Returns:
+
+        """
+        toPrint = ''
+        for f in self.compileFiles:
+            fNoExt = Path(f).with_suffix('')
+            testFile = './{}'.format(f)
+            refFile = '{}/{}_ref.sv'.format(self.refFilePath, fNoExt)
+            # Ignore this check if the reference doesn't exist
+            if (not os.path.exists(refFile)):
+                continue
+            compareResult = checkInterface(refFile, testFile, self.specificModules)
+            # A non-empty string implies there was an error
+            if (compareResult):
+                self.hasErrors = True
+                error = self.getOpError(f, ERR_BADINTERF) + '\n'
+                toPrint += error
+                self.err += error + compareResult + '\n'
+            else:
+                toPrint += f + ': interface matches reference, good'
+        if (toPrint) and (not self.silent):
+            print(toPrint.strip())
 
     def compilationErrHandler(self, fileList, oldDir, err):
         self.hasErrors = True
@@ -441,13 +479,17 @@ class Operation:
             self.checkExistence()
             if (self.hasErrors):
                 return self.err + "\n"
+        if (self.refFilePath != None):
+            self.checkInterface()
+            if (self.hasErrors):
+                return self.err + "\n"
         if ((not self.skipCompile) and (self.compileFiles != None)):
             self.checkCompilation()
             if (self.hasErrors):
                 return self.err + "\n"
         return ""
 
-def makeOpArray(config, skipCompile=False, silent=False):
+def makeOpArray(config, refFilePath=None, skipCompile=False, silent=False):
     """Create an array of Operation objects from a config dict.
 
     Args:
@@ -463,7 +505,7 @@ def makeOpArray(config, skipCompile=False, silent=False):
     # Sort problem config array by problem number
     config = sorted(config, key=lambda p: p["number"])
     for problem in config:
-        op = Operation(skipCompile, silent)
+        op = Operation(refFilePath=refFilePath, skipCompile=skipCompile, silent=silent)
         op.parseProblem(problem)
         opArray.append(op)
     return opArray

@@ -1,0 +1,3 @@
+[submodule "svinterface"]
+	path = svinterface
+	url = git@github.com:edgykuma/svinterface.git
