@@ -567,15 +567,18 @@ def checkFs(studentID, studentDir):
 
     """
     fsCmd = ["fs", "la", studentDir]
-    perms = sp.check_output(fsCmd).split()
+    perms = sp.check_output(fsCmd).decode('utf-8').split('\n')
     try:
-        idIndex = perms.index(studentID)
-        selfPerms = perms[idIndex:]
+        selfPerm = ''
+        for perm in perms:
+            if perm.strip().startswith(studentID):
+                selfPerm = perm.strip()
+                break
     except ValueError:
         error("unable to figure out student permissions for handin dir. " +
               "Please contact course staff if the problem persists.")
         return False
 
     # Has write permissions
-    return "rlidwk" in selfPerms[1]
+    return "rlidwk" in selfPerm
 
