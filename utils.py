@@ -383,8 +383,11 @@ class Operation:
         Returns:
 
         """
+        # Skip this if we're dealing with lab files
+        if (self.number < 0):
+            return ''
         toPrint = ''
-        for f in self.compileFiles:
+        for f in self.existFiles:
             fNoExt = Path(f).with_suffix('')
             testFile = './{}'.format(f)
             refFile = '{}/{}_ref.sv'.format(self.refFilePath, fNoExt)
