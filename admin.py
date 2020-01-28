@@ -119,7 +119,7 @@ def checkStudents(cfgDir, handinDir, studentList, hwNum):
     config = parseConfig(cfgDir + "/" + hwNum + "_cfg.json")
     if (config == None):
         exit(255)
-    opArray = makeOpArray(config)
+    opArray = makeOpArray(config, silent=True)
     oldCwd = os.getcwd()
     os.chdir(handinDir)
 
