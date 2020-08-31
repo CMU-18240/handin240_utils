@@ -186,9 +186,10 @@ def searchCfg(hwNum, cfgDir):
     """
     fileName = hwNum + '_cfg.json'
     fileList = os.listdir(cfgDir)
-    for f in fileList:
-        if (f.lower() == fileName.lower()):
-            return '{}/{}'.format(cfgDir, f)
+    if (fileList != None):
+        for f in fileList:
+            if (f.lower() == fileName.lower()):
+                return '{}/{}'.format(cfgDir, f)
     raise NoConfigError()
 
 def parseConfig(configPath):
@@ -353,17 +354,18 @@ class Operation:
         badFileMsg = ''
         if (self.useWildcard) and (not self.silent):
             print("Files that will be handed in:")
-        for f in self.existFiles:
-            if (not os.path.exists("./" + f)):
-                self.hasErrors = True
-                error = self.getOpError(f, ERR_NOEXIST) + "\n"
-                badFileMsg += error
-                self.err += error
-            elif (not self.silent):
-                if (self.useWildcard):
-                    print("\t{}".format(f))
-                else:
-                    print(f + ": file exists, good")
+        if (self.existFiles != None):
+            for f in self.existFiles:
+                if (not os.path.exists("./" + f)):
+                    self.hasErrors = True
+                    error = self.getOpError(f, ERR_NOEXIST) + "\n"
+                    badFileMsg += error
+                    self.err += error
+                elif (not self.silent):
+                    if (self.useWildcard):
+                        print("\t{}".format(f))
+                    else:
+                        print(f + ": file exists, good")
         if (not self.silent):
             if (self.useWildcard):
                 print("If you do not wish to hand in these files, please " +
@@ -387,22 +389,23 @@ class Operation:
         if (self.number < 0):
             return ''
         toPrint = ''
-        for f in self.existFiles:
-            fNoExt = Path(f).with_suffix('')
-            testFile = './{}'.format(f)
-            refFile = '{}/{}_ref.sv'.format(self.refFilePath, fNoExt)
-            # Ignore this check if the reference doesn't exist
-            if (not os.path.exists(refFile)):
-                continue
-            compareResult = checkInterface(refFile, testFile, self.specificModules)
-            # A non-empty string implies there was an error
-            if (compareResult):
-                self.hasErrors = True
-                error = self.getOpError(f, ERR_BADINTERF) + '\n'
-                toPrint += error
-                self.err += error + compareResult + '\n'
-            else:
-                toPrint += f + ': interface matches reference, good'
+        if (self.existFiles != None):
+            for f in self.existFiles:
+                fNoExt = Path(f).with_suffix('')
+                testFile = './{}'.format(f)
+                refFile = '{}/{}_ref.sv'.format(self.refFilePath, fNoExt)
+                # Ignore this check if the reference doesn't exist
+                if (not os.path.exists(refFile)):
+                    continue
+                compareResult = checkInterface(refFile, testFile, self.specificModules)
+                # A non-empty string implies there was an error
+                if (compareResult):
+                    self.hasErrors = True
+                    error = self.getOpError(f, ERR_BADINTERF) + '\n'
+                    toPrint += error
+                    self.err += error + compareResult + '\n'
+                else:
+                    toPrint += f + ': interface matches reference, good'
         if (toPrint) and (not self.silent):
             print(toPrint.strip())
 
