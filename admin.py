@@ -7,6 +7,9 @@ import os
 # Admins have usual admin permissions, and other students may not access
 def openStudentPerms(studentID, path, dryrun=False, verbose=False):
     fsCmd = ["fs", "sa", path, studentID, "write"]
+    fsCmd2 = ["fs", "sa", path, "system:web-srv-users", "none"]
+    fsCmd3 = ["fs", "sa", path, "system:ece", "none"]
+    fsCmd4 = ["fs", "sa", path, "system:authuser", "none"]
 
     retVal = None
     devnull = open(os.devnull, 'w')
@@ -15,6 +18,9 @@ def openStudentPerms(studentID, path, dryrun=False, verbose=False):
             print(' '.join(fsCmd))
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
+            sp.check_call(fsCmd2, stderr=devnull)
+            sp.check_call(fsCmd3, stderr=devnull)
+            sp.check_call(fsCmd4, stderr=devnull)
     except sp.CalledProcessError as e:
         retVal = studentID
     devnull.close()
