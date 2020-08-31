@@ -6,16 +6,7 @@ import os
 # Sets AFS permissions such that the student may write to the directory
 # Admins have usual admin permissions, and other students may not access
 def openStudentPerms(studentID, path, dryrun=False, verbose=False):
-    fsCmd = ['fs', 'seta', '-dir', path, '-clear', '-acl']
-    peoplePerms = [
-        'system:web-srv-users', 'rl',
-        'ee240:ta', 'all',
-        'ee240:staff', 'all',
-        'ee240', 'all',
-        'system:administrators', 'all',
-        studentID, 'write'
-    ]
-    fsCmd += peoplePerms
+    fsCmd = ["fs", "sa", path, "write"]
 
     retVal = None
     devnull = open(os.devnull, 'w')
@@ -54,16 +45,7 @@ def createStudentDirs(basePath, ids, dryrun=False, verbose=False):
 
 # Sets AFS permissions such that the student may no longer write to the directory
 def closeStudentPerms(studentID, path, dryrun=False):
-    fsCmd = ["fs", "seta", "-dir", path, "-clear", "-acl"]
-    peoplePerms = [
-        "system:web-srv-users", "rl",
-        "ee240:ta", "all",
-        "ee240:staff", "all",
-        "ee240", "all",
-        "system:administrators", "all",
-        studentID, "read"
-    ]
-    fsCmd += peoplePerms
+    fsCmd = ["fs", "sa", path, "read"]
 
     retVal = None
     devnull = open(os.devnull, "w")
