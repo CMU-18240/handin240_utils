@@ -431,10 +431,15 @@ class Operation:
         """
         # Preserve old directory to return to
         oldDir = os.getcwd()
-        # Actual files are located in a different directory, so:
+        # Actual files are located in a different directory, so construct list:
         fileList = []
         for fileName in self.compileFiles:
-            fileList.append("{}/{}".format(oldDir, fileName))
+            # If the file path is absolute, then just append as is
+            if (os.path.isabs(fileName)):
+                fileList.append(fileName)
+            # Otherwise need to prepend with old directory name
+            else:
+                fileList.append("{}/{}".format(oldDir, fileName))
         # Use tempfile's temporary directory creation. We must delete after done
         tempDir = tempfile.mkdtemp()
         os.chdir(tempDir)
