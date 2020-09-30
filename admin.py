@@ -6,9 +6,9 @@ import os
 # Sets AFS permissions such that the student may write to the directory
 # Admins have usual admin permissions, and other students may not access
 def openStudentPerms(studentID, path, dryrun=False, verbose=False):
+    failedOnce = False
     fsCmd = ["fs", "sa", path, studentID, "write"]
     peoplePerms = [
-        studentID + "@andrew.cmu.edu", "write", #necessary after creds merge
         "system:web-srv-users", "none",
         "system:ece", "none",
         "system:authuser", "none"
@@ -17,13 +17,28 @@ def openStudentPerms(studentID, path, dryrun=False, verbose=False):
 
     retVal = None
     devnull = open(os.devnull, 'w')
+
     try:
         if (verbose):
             print(' '.join(fsCmd))
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
     except sp.CalledProcessError as e:
-        retVal = studentID
+        failedOnce = True
+
+    # Do it again in case the email auth works
+    # Below is necessary after creds merge
+    fsCmd = ["fs", "sa", path, studentID + "@andrew.cmu.edu", "write"]
+    try:
+        if (verbose):
+            print(' '.join(fsCmd))
+        if (not dryrun):
+            sp.check_call(fsCmd, stderr=devnull)
+        retVal = None
+    except sp.CalledProcessError as e:
+        if (failedOnce):
+            retVal = studentID
+
     devnull.close()
 
     return retVal
@@ -52,17 +67,24 @@ def createStudentDirs(basePath, ids, dryrun=False, verbose=False):
 
 # Sets AFS permissions such that the student may no longer write to the directory
 def closeStudentPerms(studentID, path, dryrun=False):
+    failedOnce = False
     fsCmd = ["fs", "sa", path, studentID, "read"]
-    peoplePerms = [
-        studentID + "@andrew.cmu.edu", "read",  #necessary after creds merge
-    ]
-    fsCmd += peoplePerms
 
     retVal = None
     devnull = open(os.devnull, "w")
+
     try:
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
+        return retVal
+    except sp.CalledProcessError as e:
+        failedOnce = True
+
+    fsCmd = ["fs", "sa", path, studentID + "@andrew.cmu.edu", "read"]
+    try:
+        if (not dryrun):
+            sp.check_call(fsCmd, stderr=devnull)
+        retVal = None
         return retVal
     except sp.CalledProcessError as e:
         retVal = studentID
