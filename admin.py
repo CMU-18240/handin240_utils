@@ -9,9 +9,9 @@ def openStudentPerms(studentID, path, dryrun=False, verbose=False):
     failedOnce = False
     fsCmd = ["fs", "sa", path, studentID, "write"]
     peoplePerms = [
-        "system:web-srv-users", "none",
-        "system:ece", "none",
-        "system:authuser", "none"
+        "system:web-srv-users", "-negative", "r",
+        "system:ece", "-negative", "r",
+        "system:authuser", "-negative", "r"
     ]
     fsCmd += peoplePerms
 
@@ -67,18 +67,33 @@ def createStudentDirs(basePath, ids, dryrun=False, verbose=False):
 
 # Sets AFS permissions such that the student may no longer write to the directory
 def closeStudentPerms(studentID, path, dryrun=False):
-    failedOnce = False
-    fsCmd = ["fs", "sa", path, studentID, "read"]
-
-    retVal = None
     devnull = open(os.devnull, "w")
+    retVal = None
+
+    # Just in case, set negative read rights to "everyone"
+    fsCmd = ["fs", "sa", path]
+    peoplePerms = [
+        "system:web-srv-users", "-negative", "r",
+        "system:ece", "-negative", "r",
+        "system:authuser", "-negative", "r"
+    ]
+    fsCmd += peoplePerms
+    try:
+        if (not dryrun):
+            sp.check_call(fsCmd, stderr=devnull)
+    except sp.CalledProcessError as e:
+        print("Error with trying to strip permissions for {}".format(path))
+        return studentID
+
+    # Now change student perms
+    fsCmd = ["fs", "sa", path, studentID, "read"]
 
     try:
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
         return retVal
     except sp.CalledProcessError as e:
-        failedOnce = True
+        print("Error with trying to remove permissions for {}".format(path))
 
     fsCmd = ["fs", "sa", path, studentID + "@andrew.cmu.edu", "read"]
     try:
@@ -87,6 +102,7 @@ def closeStudentPerms(studentID, path, dryrun=False):
         retVal = None
         return retVal
     except sp.CalledProcessError as e:
+        print("Error with trying to remove permissions for {}".format(path))
         retVal = studentID
         return retVal
     finally:
