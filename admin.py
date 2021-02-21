@@ -7,13 +7,17 @@ import os
 # Admins have usual admin permissions, and other students may not access
 def openStudentPerms(studentID, path, dryrun=False, verbose=False):
     failedOnce = False
-    fsCmd = ["fs", "sa", path, studentID, "write"]
-    peoplePerms = [
-        "system:web-srv-users", "-negative", "rl",
-        "system:ece", "-negative", "rl",
-        "system:authuser", "-negative", "rl"
+    # Initially, clear permissions and add "default" perms
+    fsCmd = ["fs", "sa", path, "-clear", "-acl"]
+    defaultPerms = [
+        "system:web-srv-users", "l",
+        "ee240:ta", "rlidwka",
+        "ee240:staff", "rlidwka",
+        "system:ece", "l",
+        "system:administrators", "rlidwk",
+        "ee240", "rlidwka"
     ]
-    fsCmd += peoplePerms
+    fsCmd += defaultPerms
 
     retVal = None
     devnull = open(os.devnull, 'w')
@@ -24,10 +28,20 @@ def openStudentPerms(studentID, path, dryrun=False, verbose=False):
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
     except sp.CalledProcessError as e:
+        print("Unable to set default perms for {}: {}".format(path, e))
+        return retVal
+
+    fsCmd = ["fs", "sa", path, studentID, "write"]
+    try:
+        if (verbose):
+            print(' '.join(fsCmd))
+        if (not dryrun):
+            sp.check_call(fsCmd, stderr=devnull)
+        retVal = None
+    except sp.CalledProcessError as e:
         failedOnce = True
 
-    # Do it again in case the email auth works
-    # Below is necessary after creds merge
+    # Email auth is necessary after creds merge
     fsCmd = ["fs", "sa", path, studentID + "@andrew.cmu.edu", "write"]
     try:
         if (verbose):
@@ -71,24 +85,8 @@ def closeStudentPerms(studentID, path, dryrun=False):
     devnull = open(os.devnull, "w")
     retVal = None
 
-    # Just in case, set negative read rights to "everyone"
-    fsCmd = ["fs", "sa", path]
-    peoplePerms = [
-        "system:web-srv-users", "-negative", "rl",
-        "system:ece", "-negative", "rl",
-        "system:authuser", "-negative", "rl"
-    ]
-    fsCmd += peoplePerms
-    try:
-        if (not dryrun):
-            sp.check_call(fsCmd, stderr=devnull)
-    except sp.CalledProcessError as e:
-        print("Error with trying to strip permissions for {}".format(path))
-        return studentID
-
     # Now change student perms
     fsCmd = ["fs", "sa", path, studentID, "read"]
-
     try:
         if (not dryrun):
             sp.check_call(fsCmd, stderr=devnull)
