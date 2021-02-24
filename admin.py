@@ -9,13 +9,14 @@ def openStudentPerms(studentID, path, dryrun=False, verbose=False):
     failedOnce = False
     # Initially, clear permissions and add "default" perms
     fsCmd = ["fs", "sa", path, "-clear", "-acl"]
+    # These are the default permissions, without the specific student
     defaultPerms = [
-        "system:web-srv-users", "l",
+        # Permissions for staff
         "ee240:ta", "rlidwka",
         "ee240:staff", "rlidwka",
-        "system:ece", "l",
-        "system:administrators", "rlidwk",
-        "ee240", "rlidwka"
+        "ee240", "rlidwka",
+        # Permissions for admins
+        "system:administrators", "rlidwk"
     ]
     fsCmd += defaultPerms
 
